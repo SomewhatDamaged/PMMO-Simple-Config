@@ -1,10 +1,14 @@
-name: PMMO Simple Comfig
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python application
 
 on:
   push:
     branches: [ "master", "feat/windows-action" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,5 +25,5 @@ jobs:
     - run: flet pack PMMO_Simple_Config.py
     - uses: actions/upload-artifact@v2
       with:
-        name: PMMOSimpleComfig
+        name: myflet
         path: dist/main.exe
