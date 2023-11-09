@@ -19,6 +19,7 @@ class ForceExit(Exception):
 class SimpleSettings(ft.UserControl):
     def __init__(self):
         super().__init__()
+        # Pre-compiled Regex
         self.integer_re = re.compile(r'^(?:[1-9]\d|100|[1-9])$')
         self.float_re = re.compile(r'^\d*(?:\.\d*)?$')
         self.requirements_re = re.compile(r'^(?P<pre_whitespace>\s*)(?P<option>"\S+ Req Enabled" = )(?:true|false)\s*$', flags=re.IGNORECASE)
@@ -26,7 +27,11 @@ class SimpleSettings(ft.UserControl):
         self.monster_buffs_re = re.compile(r'^(?P<pre_whitespace>\s*)(?P<option>"Enable Mob Scaling" = )(?:true|false)\s*$', flags=re.IGNORECASE)
         self.xp_loss_on_death_re = re.compile(r'^(?P<pre_whitespace>\s*)(?P<option>"Loss on death" = )(?P<value>\d*(?:\.\d*)?)\s*$', flags=re.IGNORECASE)
         self.xp_multiplier_re = re.compile(r'^(?P<pre_whitespace>\s*)(?P<option>"Global Modifier" = )(?P<value>\d*(?:\.\d*)?)\s*$', flags=re.IGNORECASE)
+        self.veinminer_re = re.compile(r'^(?P<pre_whitespace>\s*)(?P<option>"vein enabled" = )(?:true|false)\s*$', flags=re.IGNORECASE)
+
         self.cwd = None
+
+        # Datapack JSON
         self.biome_block = {
             "pack": {
                 "description": "Remove biomes - Project MMO Basic Settings",
@@ -125,6 +130,7 @@ class SimpleSettings(ft.UserControl):
 
         # Settings
         self.requirements_checkbox = ft.Checkbox(label="Requirements (to wear armor, use tools, etc)", value=True, on_change=self.update_requirements)
+        self.veinminer_checkbox = ft.Checkbox(label="Vein-Miner", value=True, on_change=self.update_veinminer)
         self.anticheese_checkbox = ft.Checkbox(label="Anti-Cheese (makes some xp gains reduce over time)", value=True, on_change=self.update_anticheese)
         self.biome_modifiers_checkbox = ft.Checkbox(label="Biome Modifiers", value=True, on_change=self.update_biome_effects)
         self.dimension_modifiers_checkbox = ft.Checkbox(label="Dimension Modifiers", value=True, on_change=self.update_dimension_effects)
@@ -150,7 +156,12 @@ class SimpleSettings(ft.UserControl):
                         self.night_vision_perk_checkbox,
                     ]
                 ),
-                self.monster_buffs_checkbox,
+                ft.Row(
+                    controls=[
+                        self.monster_buffs_checkbox,
+                        self.veinminer_checkbox,
+                    ]
+                ),
                 self.xp_multiplier_textfield,
                 self.lose_xp_on_death_checkbox,
                 self.lose_xp_on_death_textfield,
@@ -214,6 +225,7 @@ class SimpleSettings(ft.UserControl):
             self.xp_multiplier_textfield.value = self.get_xp_multiplier()
         self.biome_modifiers_checkbox.value = self.get_biome_datapack()
         self.dimension_modifiers_checkbox.value = self.get_dimension_datapack()
+        self.veinminer_checkbox.value = self.get_veinminer()
         
     def update_requirements(self, e: ft.FilePickerResultEvent) -> None:
         requirements_path = self.cwd / 'serverconfig' / 'pmmo-server.toml'
@@ -275,6 +287,34 @@ class SimpleSettings(ft.UserControl):
         self.dialogue.title = ""
         self.update()
         self.restore_pmmoserver()
+        return False
+    
+    def update_veinminer(self, e) -> None:
+        requirements_path = self.cwd / 'serverconfig' / 'pmmo-server.toml'
+        with requirements_path.open(mode="r") as file:
+            requirements = file.readlines()
+        save_data = []
+        line: str
+        for line in requirements:
+            match = self.veinminer_re.match(line)
+            if match:
+                line = f"{match['pre_whitespace']}{match['option']}{e.data}\n"
+            save_data.append(line)
+        with requirements_path.open(mode="w") as file:
+            file.writelines(save_data)
+        self.process_defaults()
+        self.update()
+
+    def get_veinminer(self) -> bool:
+        self.backup_pmmoserver()
+        requirements_path = self.cwd / 'serverconfig' / 'pmmo-server.toml'
+        line: str
+        with requirements_path.open(mode="r") as file:
+            while ( line := file.readline() ):
+                if not self.veinminer_re.match(line):
+                    continue
+                if line.strip().endswith("true"):
+                    return True
         return False
 
     def update_anticheese(self, e) -> None:
