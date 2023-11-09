@@ -1,0 +1,16 @@
+on:
+  push:
+    branches:
+    - main
+    - release/*
+  pull_request:
+    branches:
+    - main
+
+- name: PMMOSimpleComfig
+  # You may pin to the exact commit or the version.
+  # uses: 0h-n0/flet-action-windows@1ff842fcea7423fd0ab12626924eace340df3d63
+  uses: 0h-n0/flet-action-windows@0.1.0
+  with:
+    # set entry-point script file.
+    path: PMMO_Simple_Config.py
