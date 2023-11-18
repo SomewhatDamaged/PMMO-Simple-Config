@@ -263,10 +263,33 @@ class SimpleSettings(ft.UserControl):
     def backup_pmmoserver(self) -> None:
         requirements_path = self.cwd / 'serverconfig' / 'pmmo-server.toml'
         requirements_backup_path = self.cwd / 'serverconfig' / 'pmmo-server.toml.bak'
+        self.fix_pmmoserver_mob()
         if requirements_backup_path.exists():
             return
         copyfile(requirements_path, requirements_backup_path)
 
+    def fix_pmmoserver_mob(self) -> None:
+        pmmoserver_path = self.cwd / 'serverconfig' / 'pmmo-server.toml'
+        with pmmoserver_path.open(mode="r") as file:
+            pmmoserver = file.readlines()
+        output: list = []
+        fixed: bool = False
+        for line in pmmoserver:
+            if '[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic".max_health]' in line:
+                fixed = True
+                line = line.replace('[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic".max_health]', '[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic.max_health"]')
+            elif '[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic".attack_damage]' in line:
+                fixed = True
+                line = line.replace('[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic".attack_damage]', '[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic.attack_damage"]')
+            elif '[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic".movement_speed]' in line:
+                fixed = True
+                line = line.replace('[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic".movement_speed]', '[Mob_Scaling.Scaling_Settings."Mob Scaling IDs and Ratios"."minecraft:generic.movement_speed"]')
+            output.append(line)
+        if not fixed:
+            return
+        with pmmoserver_path.open(mode="w") as file:
+            file.writelines(output)    
+        
     def get_requirements(self) -> bool:
         self.backup_pmmoserver()
         requirements_path = self.cwd / 'serverconfig' / 'pmmo-server.toml'
